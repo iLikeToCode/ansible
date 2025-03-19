@@ -1,0 +1,28 @@
+---
+- name: Setup Docker and Deploy Docker Compose
+  hosts: localhost
+  become: true
+  connection: local
+
+  tasks:
+    - name: Install docker.io package
+      package:
+        name: docker.io
+        state: present
+
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Download docker-compose.yml from GitHub Gist
+      get_url:
+        url: 
+        dest: /opt/orca/docker-compose.yml
+        mode: "0644"
+
+    - name: Deploy Docker Compose
+      command: docker compose up -d
+      args:
+        chdir: /opt/orca
