@@ -88,6 +88,19 @@ services:
     networks:
       - app_network
 
+  app:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    networks:
+      - app_network
+
   orcaslicer:
     image: linuxserver/orcaslicer
     container_name: orcaslicer
