@@ -98,4 +98,4 @@
       command: echo "PG_PASS=$(openssl rand -base64 36 | tr -d '\n')" >> /opt/orca/.env
 
     - name: Authentik Secret
-      command: echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> .env
+      command: echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> /opt/orca/.env
