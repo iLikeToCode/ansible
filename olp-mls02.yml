@@ -3,6 +3,10 @@
   hosts: localhost
   become: true
   connection: local
+  vars:
+    arch_mapping:  # Map ansible architecture {{ ansible_architecture }} names to Docker's architecture names
+      x86_64: amd64
+      aarch64: arm64
 
   tasks:
     - name: Install Git
@@ -11,18 +15,78 @@
         state: present
 
     - name: Pull KIAUH
-      command: git clone https://github.com/dw-0/kiauh.git /home/makerlab/kiauh
-  
-    - name: Install docker.io package
-      package:
-        name: docker.io
+      command: rm -rf /home/makerlab/kiauh && git clone https://github.com/dw-0/kiauh.git /home/makerlab/kiauh
+
+    - name: Update and upgrade all packages to the latest version
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - software-properties-common
+
+    - name: Create directory for Docker's GPG key
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Add Docker's official GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        keyring: /etc/apt/keyrings/docker.gpg
         state: present
 
-    - name: Ensure Docker service is running
-      service:
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ arch_mapping[ansible_architecture] | default(ansible_architecture) }}
+          signed-by=/etc/apt/keyrings/docker.gpg]
+          https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+        filename: docker
+        state: present
+
+    - name: Install Docker and related packages
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      loop:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
+
+    - name: Add Docker group
+      ansible.builtin.group:
         name: docker
-        state: started
+        state: present
+
+    - name: Add user to Docker group
+      ansible.builtin.user:
+        name: "makerlab"
+        groups: docker
+        append: true
+
+    - name: Enable and start Docker services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
         enabled: true
+        state: started
+      loop:
+        - docker.service
+        - containerd.service
+
+    - name: Create /opt/orca
+      command: mkdir -p /opt/orca
 
     - name: Download docker-compose.yml from GitHub Gist
       get_url:
@@ -30,7 +94,8 @@
         dest: /opt/orca/docker-compose.yml
         mode: "0644"
 
-    - name: Deploy Docker Compose
-      command: docker compose up -d
-      args:
-        chdir: /opt/orca
+    - name: Postgres Pass
+      command: echo "PG_PASS=$(openssl rand -base64 36 | tr -d '\n')" >> /opt/orca/.env
+
+    - name: Authentik Secret
+      command: echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> .env
