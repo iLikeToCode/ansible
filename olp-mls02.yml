@@ -9,13 +9,10 @@
       aarch64: arm64
 
   tasks:
-    - name: Install Git
-      package:
-        name: git
-        state: present
-
     - name: Pull KIAUH
-      command: rm -rf /home/makerlab/kiauh && git clone https://github.com/dw-0/kiauh.git /home/makerlab/kiauh
+      ansible.builtins.git:
+        repo: https://github.com/dw-0/kiauh.git
+        dest: /home/makerlab/kiauh
 
     - name: Update and upgrade all packages to the latest version
       ansible.builtin.apt:
@@ -95,7 +92,7 @@
         mode: "0644"
 
     - name: Postgres Pass
-      command: echo "PG_PASS=$(openssl rand -base64 36 | tr -d '\n')" >> /opt/orca/.env
+      command: bash -c 'echo "PG_PASS=$(openssl rand -base64 36 | tr -d '\n')" >> /opt/orca/.env'
 
     - name: Authentik Secret
-      command: echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> /opt/orca/.env
+      command: bash -c 'echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> /opt/orca/.env'
