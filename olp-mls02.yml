@@ -10,7 +10,7 @@
 
   tasks:
     - name: Pull KIAUH
-      ansible.builtins.git:
+      ansible.builtin.git:
         repo: https://github.com/dw-0/kiauh.git
         dest: /home/makerlab/kiauh
 
