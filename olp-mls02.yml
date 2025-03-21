@@ -83,7 +83,7 @@
         - containerd.service
 
     - name: Create /opt/orca
-      command: mkdir -p /opt/orca
+      command: rm -rf /opt/orca && mkdir -p /opt/orca
 
     - name: Download docker-compose.yml from GitHub Gist
       get_url:
